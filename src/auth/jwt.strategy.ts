@@ -1,8 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
+import { UnauthorizedWrappedException } from 'src/exceptions/UnauthorizedWrappedException';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -17,7 +19,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: Request) => {
+          return req?.cookies?.['token'];
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: jwtSecret,
     });
@@ -26,7 +32,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     const user = await this.authService.validateUser(payload.sub);
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedWrappedException(
+        'Пользователь c таким id не найден!',
+      );
     }
 
     await this.authService.updateLastActivity(payload.sub);
