@@ -20,6 +20,7 @@ import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto, UserResponseDto } from './dto/authResponse.dto';
 import { Response } from 'express';
 import { plainToInstance } from 'class-transformer';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -76,11 +77,39 @@ export class AuthController {
     };
   }
 
-  @Get('profile')
+  @Post('logout')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Выход из системы' })
+  @ApiResponse({ status: 200, description: 'Успешный выход из системы' })
+  async logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
+    return {
+      data: {
+        message: 'Logged out successfully',
+      },
+    };
+  }
+
+  @Get('user')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiOperation({ summary: 'Получить профиль текущего пользователя' })
-  getProfile(@Request() req) {
-    return req.user;
+  async getUser(@Request() req) {
+    const user = await this.authService.validateUser(req.user.userId);
+
+    return {
+      data: {
+        user: plainToInstance(UserResponseDto, user, {
+          excludeExtraneousValues: true,
+        }),
+      },
+    };
   }
 }
