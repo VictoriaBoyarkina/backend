@@ -6,8 +6,8 @@ import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../user/schema/user.schema';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { UnauthorizedWrappedException } from 'src/exceptions/UnauthorizedWrappedException';
 import { ConflictWrappedException } from 'src/exceptions/ConflictWrappedException';
+import { UnauthorizedWrappedException } from 'src/exceptions/UnauthorizedWrappedException';
 
 @Injectable()
 export class AuthService {
@@ -68,33 +68,30 @@ export class AuthService {
 
     user.lastLogin = new Date();
     user.lastActivity = new Date();
-    await user.save();
+    const savedUser = await user.save();
 
     const token = this.generateToken(user);
 
     return {
       accessToken: token,
-      user: {
-        id: user._id,
-        nickname: user.nickname,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-      },
+      user: savedUser,
     };
   }
 
   private generateToken(user: UserDocument) {
     const payload = {
       sub: user._id,
-      nickname: user.nickname,
-      email: user.email,
-      role: user.role,
     };
     return this.jwtService.sign(payload);
   }
 
   async validateUser(userId: string) {
+    const user = await this.userModel.findById(userId);
+
+    if (!user) {
+      throw new UnauthorizedWrappedException('Пользователь не авторизован!');
+    }
+
     return this.userModel.findById(userId);
   }
 
