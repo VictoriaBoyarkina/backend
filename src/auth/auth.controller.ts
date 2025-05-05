@@ -102,7 +102,7 @@ export class AuthController {
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiOperation({ summary: 'Получить профиль текущего пользователя' })
   async getUser(@Request() req) {
-    const user = await this.authService.validateUser(req.user.userId);
+    const user = await this.authService.checkUserExist(req.user.userId);
 
     return {
       data: {

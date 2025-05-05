@@ -8,6 +8,7 @@ import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { ConflictWrappedException } from 'src/exceptions/ConflictWrappedException';
 import { UnauthorizedWrappedException } from 'src/exceptions/UnauthorizedWrappedException';
+import { NotFoundWrappedException } from 'src/exceptions/NotFoundWrappedException';
 
 @Injectable()
 export class AuthService {
@@ -85,14 +86,14 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
-  async validateUser(userId: string) {
+  async checkUserExist(userId: string) {
     const user = await this.userModel.findById(userId);
 
     if (!user) {
-      throw new UnauthorizedWrappedException('Пользователь не авторизован!');
+      throw new NotFoundWrappedException('Пользователь не найден!');
     }
 
-    return this.userModel.findById(userId);
+    return user;
   }
 
   async updateLastActivity(userId: string) {

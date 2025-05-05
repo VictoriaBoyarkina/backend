@@ -15,9 +15,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('DATABASE_URL'),
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const user = configService.get<string>('DB_USER');
+        const pass = configService.get<string>('DB_PASS');
+        const host = configService.get<string>('DB_HOST');
+        const port = configService.get<string>('DB_PORT');
+        const name = configService.get<string>('DB_NAME');
+
+        return {
+          uri: `mongodb://${user}:${pass}@${host}:${port}/${name}?authSource=admin`,
+        };
+      },
     }),
     AuthModule,
     UserModule,
